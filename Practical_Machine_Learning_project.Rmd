@@ -1,0 +1,103 @@
+Human Activity Recognition in Weigtht Lifting for Coursera Practical Machine Learning Course
+============================================================================================
+
+## Introduction
+
+  The course project [3] is about the recognition of human activity. Six participants were asked perform barbell lifts in five differnt ways (A,B,C,D,E) with sensors attached on them [4]. The goal is to identify the way they performed the exercise from the data collected.
+  
+## Libraries used
+
+For the project we will have to load these three libraries:
+```{r,eval=FALSE}
+library("caret")
+library("e1071")
+library("randomForest")
+```
+
+## Data manipulation
+
+Datasets retrieval ([5],[6]):
+```{r,eval=FALSE}
+tr_data<-read.csv(file="pml-training.csv",header=TRUE,sep="," )
+test_data<-read.csv(file="pml-testing.csv",header=TRUE,sep="," )
+```
+
+For cross validation purposes, training data will be further sliced, 70% training dataset and 30% test dataset:
+```{r,eval=FALSE}
+set.seed(1111)
+tr_ind <- createDataPartition(tr_data$classe, list = FALSE, p = 0.7)
+tr_tr_data = tr_data[tr_ind, ]
+ts_tr_data = tr_data[-tr_ind, ]
+```
+Numeric columns seperation:
+```{r,eval=FALSE}
+col_num = which(lapply(tr_tr_data, class) %in% c("numeric"))
+```
+
+The next step is to do some basic preprocessing by standardizing datasets and renaming some columns:
+```{r,eval=FALSE}
+preModel <- preProcess(tr_tr_data[,col_num], method = c("knnImpute"))
+ptr<- cbind(tr_tr_data$classe, predict(preModel, tr_tr_data[,col_num]))
+ptest<- cbind(ts_tr_data$classe, predict(preModel, ts_tr_data[, col_num]))
+ptest2<-predict(preModel, test_data[, col_num])
+
+names(ptr)[1] <- 'classe'
+names(ptest)[1] <- 'classe'
+names(ptest2)[1] <- 'classe'
+```
+
+## Model
+
+We will use "random forests" algorithm to builde the model:
+```{r,eval=FALSE}
+model  <- randomForest(classe ~ ., ptr)
+#model<-train(classe~.,data=ptr,method="rf",prox=TRUE) not enough RAM
+```
+
+Confusion Matrix on training data shows accuracy 100%:
+```{r,eval=FALSE}
+training_pred <- predict(rf_model, ptraining) 
+print(confusionMatrix(training_pred, ptraining$classe))
+```
+
+Confusion Matrix on testing data shows accuracy 98.57%, so we don't need to prune the model:
+```{r,eval=FALSE}
+ptest_model<-predict(model,ptest)
+print(confusionMatrix(ptest_model, ptest$classe))
+```
+
+## Results
+
+The final step is to use the 20 test cases given (pml-testing.csv) to predict the way they perform the exercise: 
+```{r,eval=FALSE}
+results <- predict(rf_model, prtesting) 
+results
+
+```
+The results are:
+
+|1  |2  |3  |4  |5  |6  |7  |8  |9  |10 |11 |12 |13 |14 |15 |16 |17 |18 |19 |20 | 
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+|B  |A  |B  |A  |A  |E  |D  |B  |A  |A  |B  |C  |B  |A  |E  |E  |A  |B  |B  |B  |
+
+
+## References
+
+[1]: Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012.
+
+[2]: Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+[3] https://class.coursera.org/predmachlearn-002
+
+[4] http://groupware.les.inf.puc-rio.br/har
+
+[5] https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+[6] https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+
+
+
+
+
